@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html {
+                
+                font-family:"monospace";
+                display:inline-block;
+                margin: 0px auto;
+                text-align: center;
+                
+            
+        }
+
+        h1 {
+                
+                color: deeppink;
+                width: 200;
+                word-wrap: break-word;
+                padding: 2vh;
+                font-size: 35px;
+            
+        }
+
+        p {
+                
+                font-size: 1.5rem;
+                width: 200;
+                word-wrap: break-word;
+            
+        }
+
+        .button {
+                
+            font-family: "monospace";
+            display: inline-block;
+            background-color: black;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            padding: 16px 40px;
+            text-decoration: none;
+            font-size: 30px;
+            margin: 2px;
+            cursor: pointer;
+        
+        }
+
+        p.dotted {
+
+            margin: auto;
+            width: 75%;
+            font-size: 25px;
+            text-align: center;
+
+        }
+
+        html{
+            background-image: url("/get-image/Daleks");
+            background-color: #000000;
+            background-repeat: no-repeat;
+            background-size: cover;
+        }
+
+        body>p{
+            color: deeppink;
+            background-color: black;
+        }
+    </style>
+    <script>
+        function updateColor(endpoint){
+            var xmlhttp = new XMLHttpRequest();
+
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == XMLHttpRequest.DONE) { // XMLHttpRequest.DONE == 4
+                
+                }
+            };
+
+            xmlhttp.open("POST", "/"+endpoint, true);
+            xmlhttp.send('color='+document.getElementById(endpoint).value);
+
+        }
+
+        function trigger(endpoint){
+            var xmlhttp = new XMLHttpRequest();
+
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == XMLHttpRequest.DONE) { // XMLHttpRequest.DONE == 4
+                
+                }
+            };
+
+            xmlhttp.open("GET", "/trigger/"+endpoint, true);
+            xmlhttp.send();
+        }
+
+        function brightness(endpoint){
+            var xmlhttp = new XMLHttpRequest();
+
+            xmlhttp.onreadystatechange = function() {
+                if (xmlhttp.readyState == XMLHttpRequest.DONE) { // XMLHttpRequest.DONE == 4
+                
+                }
+            };
+
+            xmlhttp.open("GET", "/brightness/"+(endpoint/100), true);
+            xmlhttp.send();
+        }
+    </script>
+</head>
+
+<body>
+    <title>Dalek Control Panel</title>
+    <h1>Dalek Control Panel</h1>
+    <br>
+    <p class="dotted">This is the control panel for Alek the Dalek</p>
+    <h1>Control Various aspects of Alek.</h1><br>
+    <p>
+    Eye stalk Outer: <input type="color" id="eye-stalk-outer" name="color" onchange="updateColor('eye-stalk-outer');" value="#getColorCode()" />
+    <br>
+    Eye stalk Inner: <input type="color" id="eye-stalk-inner"" name="color" onchange="updateColor('eye-stalk-inner');" value="#innerEyeStalk_getColorCode()" />
+    <br>
+    Ears: <input type="color" id="leftEar" name="color" onchange="updateColor('leftEar');" value="#ears_getColorCode()" />
+    <br>
+    <!--Right "Ear": <input type="color" id="rightEar" name="color" onchange="updateColor('rightEar')" value="#getColorCode()" />-->
+    <br>
+    <br>
+    Rainbox Mode: <input type="checkbox" id="rainbow" name="color" onchange="trigger('rainbow');" />
+    <br>
+    <br>
+    Trigger Gun: <input type="submit" id="gun" name="trigger" onclick="trigger('gun');" />
+    <br>
+    <br>
+    Talking: <input type="submit" id="talking" name="trigger" onclick="trigger('talking');" />
+    <br>
+    <br>
+    Brightness: <input type="range" id="brightness" name="brightness" min="1" max="100" value="1" onchange="brightness(document.getElementById('brightness').value)" />
+    <br>
+    <br>
+    </p>
+</body>
+
+</html>

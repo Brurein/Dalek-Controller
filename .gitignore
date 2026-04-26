@@ -1,0 +1,8 @@
+env/
+__pycache__/
+*.py[cod]
+*.bin
+*.txt
+settings.toml
+.DS_Store
+Thumbs.db
