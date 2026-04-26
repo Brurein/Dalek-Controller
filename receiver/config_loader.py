@@ -3,6 +3,8 @@ import json
 
 CONFIG_FILE = "config.json"
 
+# Defaults are kept in code so a missing or partial config.json can still boot
+# the receiver with sensible hardware mappings.
 DEFAULT_CONFIG = {
     "wifi_channel": 1,
     "sound": {
@@ -86,6 +88,7 @@ DEFAULT_CONFIG = {
 
 
 def deep_update(base, updates):
+    """Merge nested dicts so config.json can override only the keys it needs."""
     for key, value in updates.items():
         if isinstance(value, dict) and isinstance(base.get(key), dict):
             deep_update(base[key], value)
@@ -95,6 +98,7 @@ def deep_update(base, updates):
 
 
 def load_config():
+    """Load config.json, creating it from defaults when it is absent."""
     config = json.loads(json.dumps(DEFAULT_CONFIG))
     try:
         with open(CONFIG_FILE, "r") as handle:
@@ -109,5 +113,6 @@ def load_config():
 
 
 def save_config(config):
+    """Persist the current config in compact JSON for MicroPython."""
     with open(CONFIG_FILE, "w") as handle:
         json.dump(config, handle)

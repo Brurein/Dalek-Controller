@@ -12,6 +12,7 @@ from sound import SoundBoard, handle_sound_command
 
 
 def setup_espnow(channel):
+    """Start ESP-NOW on the configured channel without joining Wi-Fi."""
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     try:
@@ -26,6 +27,7 @@ def setup_espnow(channel):
 def main():
     print("EXTERMINATE")
 
+    # config.json overrides DEFAULT_CONFIG, but missing keys keep their defaults.
     config = load_config()
     light_config = config.get("lights", DEFAULT_CONFIG["lights"])
     input_config = config.get("inputs", DEFAULT_CONFIG["inputs"])
@@ -41,6 +43,8 @@ def main():
     )
 
     def tick_outputs():
+        # Called during long waits as well as the main loop so animations do not
+        # freeze while the sound board or amp is settling.
         tick_controllers(controllers)
         audio_act.apply()
 
@@ -57,6 +61,8 @@ def main():
         if message:
             command, text = decode_command(message, light_config)
             print("rx:", text)
+            # Amp commands are handled before lights, then sound handling runs
+            # last so play_N can trigger both audio and configured light effects.
             if handle_amp_command(text, command, amp):
                 pass
             elif handle_tpa_command(text, command, tpa):

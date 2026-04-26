@@ -8,6 +8,8 @@ TPA2016_REG_GAIN = 0x05
 
 
 class AmpShutdown:
+    """Control the amplifier shutdown/enable pin."""
+
     def __init__(self, config):
         self.enabled = bool(config.get("enabled", False))
         self.enable_value = int(config.get("enable_value", 1))
@@ -43,6 +45,7 @@ class AmpShutdown:
             self.mute()
 
     def unmute_after_boot(self, tick=None):
+        """Delay unmuting so the amp misses boot pops and sound-board resets."""
         if not self.enabled or not self.auto_unmute:
             return
         end = time.ticks_add(time.ticks_ms(), self.unmute_delay_ms)
@@ -54,6 +57,7 @@ class AmpShutdown:
 
 
 def handle_amp_command(text, command, amp):
+    """Accept either plain text or JSON amp commands."""
     action = None
 
     if text:
@@ -90,6 +94,8 @@ def handle_amp_command(text, command, amp):
 
 
 class TPA2016:
+    """Minimal TPA2016 I2C gain control."""
+
     def __init__(self, config):
         self.enabled = bool(config.get("i2c_enabled", False))
         self.address = int(config.get("address", TPA2016_DEFAULT_ADDRESS))
@@ -129,6 +135,7 @@ class TPA2016:
         self.i2c.writeto_mem(self.address, register, bytes([value & 0xFF]))
 
     def gain_to_register(self, gain):
+        # The chip stores negative gain values as 6-bit two's complement.
         gain = max(self.min_gain, min(self.max_gain, int(gain)))
         if gain < 0:
             return (gain + 64) & 0x3F
@@ -156,6 +163,7 @@ class TPA2016:
 
 
 def handle_tpa_command(text, command, tpa):
+    """Handle gain commands from volume/tpa text or JSON payloads."""
     action = None
     args = []
 

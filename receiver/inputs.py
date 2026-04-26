@@ -6,6 +6,7 @@ from lights import ANIMATIONS, clamp, normalize_target, scale_color
 
 
 def pin_pull_mode(value):
+    """Translate config text into a MicroPython Pin pull constant."""
     value = str(value or "").lower()
     if value == "up":
         return Pin.PULL_UP
@@ -15,6 +16,8 @@ def pin_pull_mode(value):
 
 
 class ActiveLowPulseOverlay:
+    """Temporarily overlay an animation while an input pin is active."""
+
     def __init__(self, config, controllers, name="input"):
         self.enabled = bool(config.get("enabled", False))
         self.controllers = controllers
@@ -42,6 +45,7 @@ class ActiveLowPulseOverlay:
         return self.enabled and self.pin is not None and self.pin.value() == self.active
 
     def apply(self):
+        """Start, restore, or draw the overlay depending on current pin state."""
         active = self.is_active()
         if active and not self.was_active:
             self.started_ms = time.ticks_ms()
@@ -72,6 +76,7 @@ class ActiveLowPulseOverlay:
                         twinkle_count=controller.twinkle_count,
                     )
         elif not active and self.was_active:
+            # Restore each controller exactly enough to resume its prior effect.
             print(self.name, "inactive")
             for target in self.targets:
                 if target in self.controllers:
@@ -93,6 +98,8 @@ class ActiveLowPulseOverlay:
         if not active or self.animation != "pulse":
             return
 
+        # For audio activity, a square pulse reads better than the normal sine
+        # animation because it tracks quick input changes more visibly.
         elapsed = time.ticks_diff(time.ticks_ms(), self.started_ms)
         phase = (elapsed // self.pulse_speed_ms) % 2
         level = self.max_brightness if phase else self.min_brightness

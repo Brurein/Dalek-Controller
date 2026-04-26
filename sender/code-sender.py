@@ -6,10 +6,13 @@ import select
 import sys
 import time
 
-# CONFIG
+# ESP-NOW peer MAC for the receiver. Keep this paired with the receiver board
+# and on the same Wi-Fi channel or messages will silently disappear.
 peer = b'\x78\x21\x84\x9d\x41\xe4'
 WIFI_CHANNEL = 1
 
+# Friendly console aliases. The receiver uses the same normalized target names,
+# so commands like "outer eye rainbow" and "outer_eye rainbow" land identically.
 TARGET_ALIASES = {
     "outer": "outer_eye",
     "outer_eye": "outer_eye",
@@ -45,7 +48,8 @@ PIN_HIGH = 1
 
 print("EXTERMINATE")
 
-# SETUP
+# ESP-NOW on ESP32/ESP8266 is tied to the station interface even when the board
+# is not connected to an access point.
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 try:
@@ -63,7 +67,8 @@ trigger_enabled = True
 console_buffer = ""
 prompt_pending = True
 
-# Button setup
+# Each trigger pin is active-low with a pull-up. The index in trigger_pins maps
+# directly to the play_N message sent to the receiver.
 trigger_pin_objs = {}
 
 for track_no, pin_no in enumerate(trigger_pins):
@@ -78,6 +83,7 @@ for track_no, pin_no in enumerate(trigger_pins):
 
 
 def is_triggered():
+    """Return the first button edge that survives debounce, if any."""
     now = time.ticks_ms()
 
     for pin_no in trigger_pin_objs:
@@ -98,6 +104,7 @@ def is_triggered():
 
 
 def send_payload(payload):
+    """Send raw text or bytes to the configured ESP-NOW peer."""
     if isinstance(payload, str):
         payload = payload.encode()
     e.send(peer, payload)
@@ -105,6 +112,7 @@ def send_payload(payload):
 
 
 def send_json(payload):
+    """Send structured commands for light control."""
     send_payload(json.dumps(payload))
 
 
@@ -117,6 +125,7 @@ def print_prompt():
 
 
 def console_print(*args):
+    # Keep asynchronous replies readable without losing the half-typed command.
     print("")
     print(*args)
     if not prompt_pending:
@@ -178,11 +187,13 @@ def maybe_float(value):
 
 
 def normalize_target(value):
+    """Convert user-facing target names into receiver target keys."""
     key = value.strip().lower().replace("-", "_").replace(" ", "_")
     return TARGET_ALIASES.get(key, key)
 
 
 def compact_target_phrase(text):
+    """Allow natural two-word target names before normal command splitting."""
     lower = text.lower()
     phrases = (
         ("outer eye", "outer_eye"),
@@ -205,6 +216,7 @@ def add_target(payload, target):
 
 
 def animation_command(name, args, target=None):
+    """Build the common animation JSON payload from console arguments."""
     payload = {"cmd": "animation", "name": name}
     add_target(payload, target)
 
@@ -228,6 +240,7 @@ def animation_command(name, args, target=None):
 
 
 def handle_target_command(target, args):
+    """Handle commands that explicitly start with a light target."""
     if not args:
         print("usage: <target> <command> ...")
         return True
@@ -279,6 +292,7 @@ def handle_target_command(target, args):
 
 
 def handle_console(line):
+    """Parse one completed serial-console command."""
     global trigger_enabled
 
     line = compact_target_phrase(line.strip())
@@ -396,6 +410,7 @@ def handle_console(line):
 
 
 def read_console():
+    """Read stdin one character at a time so the main loop stays responsive."""
     global console_buffer, prompt_pending
 
     if prompt_pending:
@@ -434,6 +449,7 @@ def read_console():
 
 
 def read_replies():
+    """Print optional receiver replies, such as status responses."""
     host, msg = e.recv(0)
     if msg:
         try:
@@ -446,6 +462,8 @@ print("ESP-NOW sender ready")
 print("type 'help' for commands")
 
 while True:
+    # Keep all three activities cooperative: console input, button triggers, and
+    # receiver replies. Long sleeps would make buttons and typing feel laggy.
     line = read_console()
     if line is not None:
         handle_console(line)

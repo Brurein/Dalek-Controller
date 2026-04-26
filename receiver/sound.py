@@ -4,7 +4,10 @@ from machine import Pin, UART
 
 
 class SoundBoard:
+    """Small wrapper around the Adafruit Audio FX UART command protocol."""
+
     def __init__(self, config, tick=None):
+        # tick keeps LEDs responsive while UART commands wait for replies.
         self.tick = tick
         self.uart = UART(
             int(config.get("uart_id", 2)),
@@ -27,6 +30,7 @@ class SoundBoard:
         self.wait_ms(1000)
 
     def wait_ms(self, delay_ms):
+        """Sleep cooperatively so light animations keep advancing."""
         end = time.ticks_add(time.ticks_ms(), delay_ms)
         while time.ticks_diff(end, time.ticks_ms()) > 0:
             if self.tick:
@@ -34,6 +38,7 @@ class SoundBoard:
             time.sleep_ms(10)
 
     def read_all(self, timeout_ms=1500):
+        """Collect UART response bytes until the timeout expires."""
         end = time.ticks_add(time.ticks_ms(), timeout_ms)
         data = b""
         while time.ticks_diff(end, time.ticks_ms()) > 0:
@@ -90,6 +95,7 @@ class SoundBoard:
 
 
 def parse_volume_response(data):
+    """Pull the numeric volume out of the board's UART response text."""
     try:
         text = data.decode().strip()
     except Exception:
@@ -107,6 +113,7 @@ def parse_volume_response(data):
 
 
 def handle_sound_command(text, sound, tracks):
+    """Handle text commands that belong to the sound board."""
     parts = text.split()
     if len(parts) >= 2 and parts[0].lower() == "sfx" and parts[1].lower() in ("volume", "vol"):
         if len(parts) < 3:

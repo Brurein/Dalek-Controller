@@ -12,6 +12,7 @@ from lights import (
 
 
 def send_reply(esp, host, payload):
+    """Send a best-effort ESP-NOW response to the sender that issued a command."""
     if not host:
         return
     try:
@@ -33,6 +34,7 @@ def is_number(text):
 
 
 def add_plain_args(command, args):
+    """Interpret compact text commands as color, speed, and optional tail."""
     if not args:
         return
     first = args[0]
@@ -47,6 +49,7 @@ def add_plain_args(command, args):
 
 
 def animation_params(command):
+    """Keep animation-specific tuning keys separate from generic command data."""
     params = {}
     for key in ("tail", "comet_tail", "scanner_tail", "sparkle_count", "twinkle_count"):
         if key in command:
@@ -55,6 +58,7 @@ def animation_params(command):
 
 
 def decode_command(message, light_config):
+    """Decode ESP-NOW bytes into a light command plus the original text."""
     try:
         text = compact_target_phrase(message.decode().strip())
     except Exception:
@@ -63,6 +67,8 @@ def decode_command(message, light_config):
 
     command = None
     triggers = light_config.get("triggers", {})
+    # play_N always goes to sound. It only becomes a light command when enabled
+    # globally or when the trigger is explicitly listed in the config.
     if text.startswith("play_") and not light_config.get("play_triggers_lights", False):
         command = None
     elif text in triggers:
@@ -89,6 +95,7 @@ def decode_command(message, light_config):
 
 
 def handle_light_command(command, host, esp, controllers, light_config, full_config, save_config):
+    """Apply one decoded light command to the selected controller group."""
     cmd = command.get("cmd", "animation").lower()
     if cmd == "colour":
         cmd = "color"
@@ -166,6 +173,7 @@ def handle_light_command(command, host, esp, controllers, light_config, full_con
         return True
 
     if cmd in ("config", "set_config"):
+        # Only a small safe subset of light config is writable over ESP-NOW.
         for key in ("brightness", "default_color", "startup_animation", "animation_speed_ms"):
             if key in command:
                 light_config[key] = command[key]

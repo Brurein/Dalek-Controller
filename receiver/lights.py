@@ -6,6 +6,8 @@ import neopixel
 from machine import Pin
 
 
+# Canonical target names are shared with the sender so text and JSON commands
+# can address the same physical light groups.
 TARGET_ALIASES = {
     "outer": "outer_eye",
     "outer_eye": "outer_eye",
@@ -92,6 +94,7 @@ def compact_target_phrase(text):
 
 
 def parse_color(value, fallback=(0, 128, 255, 0)):
+    """Accept named colors, #RGB/#RRGGBB/0xRRGGBB, ints, or RGB/RGBW tuples."""
     if isinstance(value, (list, tuple)) and len(value) >= 3:
         return (
             clamp(int(value[0]), 0, 255),
@@ -148,6 +151,7 @@ def scale_color(color, brightness):
 
 
 def fit_color(color, bpp):
+    """Convert internal RGBW colors to the strip's configured byte depth."""
     if bpp == 4:
         return (color[0], color[1], color[2], color[3] if len(color) >= 4 else 0)
     if len(color) >= 4 and color[0] == 0 and color[1] == 0 and color[2] == 0 and color[3] > 0:
@@ -167,6 +171,8 @@ def wheel(pos):
 
 
 class StripPair:
+    """Treat one logical light target as one or more physical NeoPixel strips."""
+
     def __init__(self, strip_configs):
         self.strips = []
         self.max_pixels = 0
@@ -201,6 +207,7 @@ class StripPair:
 
 
 def configured_targets(light_config):
+    """Return the target names available from the current strip config."""
     targets = {"all", "ears"}
     for strip_config in light_config.get("strips", []):
         if strip_config.get("enabled", True):
@@ -221,6 +228,7 @@ def grouped_strip_configs(light_config):
 
 
 def selected_controllers(command, controllers, light_config):
+    """Resolve all/ears/single-target commands into controller instances."""
     target = normalize_target(command.get("target", light_config.get("default_target", "skirt")))
     if target == "all":
         return dict(controllers)
@@ -242,6 +250,7 @@ def tick_controllers(controllers):
 
 
 def run_pixel_test(strips, brightness=0.2):
+    """Exercise RGB and white channels to help catch wiring or bpp mistakes."""
     print("pixel test: red green blue white-channel rgb-white off")
     for color in ((255, 0, 0, 0), (0, 255, 0, 0), (0, 0, 255, 0), (0, 0, 0, 255), (255, 255, 255, 0), (0, 0, 0, 0)):
         strips.fill(scale_color(color, brightness))
@@ -250,6 +259,8 @@ def run_pixel_test(strips, brightness=0.2):
 
 
 class AnimationController:
+    """Own the animation state for one logical light target."""
+
     def __init__(self, strips, config, target="lights", options=None):
         self.target = target
         self.strips = strips
@@ -270,6 +281,7 @@ class AnimationController:
         self.needs_first_frame = True
 
     def start(self, name, color=None, brightness=None, speed_ms=None, duration_ms=0, **params):
+        """Switch animation and update any supplied runtime parameters."""
         if name not in ANIMATIONS:
             print("unknown animation:", name)
             return False
@@ -307,6 +319,7 @@ class AnimationController:
             print("color:", self.target, self.color, "animation:", self.name)
 
     def tick(self):
+        """Draw one frame when enough time has elapsed."""
         now = time.ticks_ms()
         if self.duration_ms and time.ticks_diff(now, self.started_ms) >= self.duration_ms:
             self.start("solid")
@@ -395,6 +408,7 @@ class AnimationController:
 
 
 def make_light_controllers(light_config, default_light_config):
+    """Build one AnimationController per configured light group."""
     controllers = {}
     groups = grouped_strip_configs(light_config)
     options = light_config.get("target_options", {})
@@ -420,6 +434,7 @@ def random_between(low, high):
 
 
 def randomize_controller(controller):
+    """Choose a random animation with target-sized effect parameters."""
     animation = random_choice(RANDOM_ANIMATIONS)
     color = random_choice(RANDOM_COLORS)
     speed_ms = random_between(15, 180)
